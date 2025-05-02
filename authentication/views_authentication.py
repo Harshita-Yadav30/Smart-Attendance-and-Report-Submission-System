@@ -42,7 +42,7 @@ def LoginView(request):
             return redirect ('login')
 
 
-        if user.first_name == 'Coordinator':
+        if user.first_name == 'Coordinator' and Coordinator.objects.filter(email=email).exists():
             user = auth.authenticate(username=username, password=password)
             if user:
                 auth.login(request, user)
@@ -54,7 +54,7 @@ def LoginView(request):
             else:
                 messages.error(request, 'Wrong credentials.')
                 return redirect('login')
-        elif user.first_name == 'Secretary':
+        elif user.first_name == 'Secretary' and Secretary.objects.filter(email=email).exists():
             user = auth.authenticate(username=username, password=password)
             if user:
                 auth.login(request, user)
@@ -66,7 +66,7 @@ def LoginView(request):
             else:
                 messages.error(request, 'Wrong Credentials.')
                 return redirect('login')
-        elif user.first_name == 'Volunteer':
+        elif user.first_name == 'Volunteer' and Volunteer.objects.filter(email=email).exists():
             user = auth.authenticate(username=username, password=password)
             if user:
                 auth.login(request, user)
@@ -79,7 +79,7 @@ def LoginView(request):
                 messages.error(request, 'Wrong credentials.')
                 return redirect('login')
         else:
-            messages.error(request, 'Oops! There was a problem in logging you in. Please mail to vitswd@vit.edu')
+            messages.error(request, 'Oops! There was a problem in logging you in. Please mail to vitswd@vit.edu with your details.')
             return redirect('login')
 
 
@@ -131,6 +131,10 @@ def RequestPasswordResetEmail(request):
             user_object = Coordinator.objects.get(email=email)
         elif user.first_name == 'Secretary':
             user_object = Secretary.objects.get(email=email)
+        else:
+            messages.error(request,   'We found no Volunteer/Coordinator/Secretary associated with this email.')
+            return redirect ('login')
+
         if user_object.password_changed == False:
             messages.error(request,   'There is no need to receive a reset link to reset your password as your password is either your PRN or email. You have not changed it after logging in. So, try your PRN/email as your password to login.')
             return redirect ('login')
@@ -142,7 +146,7 @@ def RequestPasswordResetEmail(request):
                     'uid': urlsafe_base64_encode(force_bytes(user)),
                     'token': PasswordResetTokenGenerator().make_token(user)}
         link = reverse('setnewpassword', kwargs={'uidb64': email_contents['uid'], 'token': email_contents['token']})
-        email_subject = 'Reset password for your SWDC Account'
+        email_subject = '[IMPORTANT] Reset password for your SWDC Account'
         reset_url = 'https://'+current_site.domain+link
         emailMsg = EmailMessage(
                     email_subject,

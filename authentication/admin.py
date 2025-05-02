@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . models import Coordinator, Volunteer, Secretary, Activity, currentData, Domain, Departments, stats, GuardianFaculty, Attendance, Event, DomainAllotment
+from . models import Coordinator, Volunteer, Secretary, Activity, currentData, Domain, Departments, stats, GuardianFaculty, Attendance, Event, DomainAllotment, Count
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
@@ -11,6 +11,10 @@ class UserAdmin(UserAdmin):
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
 
+
+@admin.register(Count)
+class countInfo(admin.ModelAdmin):
+    list_display = ('id', 'count')
 
 @admin.register(Volunteer)
 class volunteerInfo(admin.ModelAdmin):
@@ -44,7 +48,7 @@ class EventInfo(admin.ModelAdmin):
     list_display = ('activity', 'date', 'roll_nos', 'start_time', 'end_time', 'map_link', 'description', 'latitude', 'longitude', 'isOnline', 'venue', 'divisions')
     list_filter = ('activity', 'isOnline')
     search_fields = ('activity',)
-    
+
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ('coord_name','vol_name', 'time', 'activity', 'venue')

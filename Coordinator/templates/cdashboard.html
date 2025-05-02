@@ -228,7 +228,7 @@
     <div class="temp">
     <header class="header">
         <section class="flex">
-            <a href="" class="logo">Hello, {{ user.last_name }} !!</a>
+            <a href="" class="logo">Hello, {{ user.username }} !!</a>
             <div class="icons">
                 <div id="menu-btn" class="fas fa-bars"></div>
             </div>
@@ -306,5 +306,18 @@
             }
         });
     </script>
+
+<script>
+    setInterval(function () {
+  let before = performance.now();
+  debugger;
+  let after = performance.now();
+
+  if (after - before > 100) {
+      alert('Oops! You shouldn\'t have opened the developer options. We\'re logging you out now!');
+      document.getElementById("logoutForm").submit();
+  }
+}, 500);
+</script>
 </body>
 </html>

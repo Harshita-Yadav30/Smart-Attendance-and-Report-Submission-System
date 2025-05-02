@@ -652,68 +652,94 @@ def ApproveVolunteer(request):
     if request.method == "GET":
         return redirect("report-verification")
     if request.method == "POST":
-        if not FormWithCaptcha(request.POST).is_valid():
-            messages.error(request, 'Please verify that you are not a robot, only then you can approve the report.')
-            return redirect('report-verification')
+        # if not FormWithCaptcha(request.POST).is_valid():
+        #     messages.error(request, 'Please verify that you are not a robot, only then you can approve the report.')
+        #     return redirect('report-verification')
         volunteer = Volunteer.objects.get(email=request.POST["email"])
         if volunteer.verified == 1 and volunteer.submitted == 1:
             return redirect("report-verification")
 
-        if (not request.POST["reportMarks"]) or int(request.POST["reportMarks"]) < 0 or int(request.POST["reportMarks"]) > 15:
-            messages.error(request, "Enter valid Report Filling marks (between 0 to 15).")
+        # attendance = int(request.POST["attendance"].split("%")[0])
+
+        # if (not attendance) or attendance < 0 or attendance > 100:
+        #     messages.error(request, "Enter valid Attendance Percentage (between 0 to 100).")
+        #     return redirect("report-verification")
+
+        attendance = request.POST.get("attendance", "No")
+
+        if attendance == "Yes":
+            attendance = True
+        else:
+            attendance = False
+
+        try:
+            if (not request.POST["reportMarks"]) or int(request.POST["reportMarks"]) < 0 or int(request.POST["reportMarks"]) > 15:
+                messages.error(request, "Enter valid Report Filling marks (between 0 to 15).")
+                return redirect("report-verification")
+        except:
+            messages.error(request, "Enter numeric Report Filling marks (between 0 to 15).")
             return redirect("report-verification")
 
-        if (not request.POST["dataCollection"]) or int(request.POST["dataCollection"]) < 0 or int(request.POST["dataCollection"]) > 10:
-            messages.error(request, "Enter valid Data Collection marks (between 0 to 10).")
+        try:
+            if (not request.POST["dataCollection"]) or int(request.POST["dataCollection"]) < 0 or int(request.POST["dataCollection"]) > 10:
+                messages.error(request, "Enter valid Data Collection marks (between 0 to 10).")
+                return redirect("report-verification")
+        except:
+            messages.error(request, "Enter numeric Data Collection marks (between 0 to 10).")
             return redirect("report-verification")
 
         try:
             activity = (volunteer.activity).replace(" ", "_")
             formatedMsg = formatMessage(Activity.objects.get(name=volunteer.activity).message)
-            formatedMsg.append("You can login and view that you have cleared the course. You can also, anytime in the future, download your Activity Certificate & Report through this login link : https://swdc.pythonanywhere.com/a/login")
+
+            if attendance:
+                formatedMsg.append("You can login and view that you have cleared the course. You can also, anytime in the future, download your Activity Certificate & Report through this login link : https://swdc.pythonanywhere.com/a/login")
+            else:
+                formatedMsg.append("Although you have successfully completed the course, your attendance is below 50%, so you are not eligible for an official certificate.")
             formatedMsg.append("This mail and the attached documents are important as they will serve as a proof that you have cleared the 'Social Services Course' in your Freshman Year, so we request you to not delete this mail and keep it safe for future reference.")
             context = {"name": volunteer.vname, "messages": formatedMsg}
             email_body = render_to_string("email_template.html", context)
-            email_subject = "Hurray! You\'ve cleared the Social Services Course"
+            email_subject = "[IMPORTANT] Hurray! You\'ve cleared the Social Services Course"
             email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [volunteer.email])
             email.content_subtype = "html"
 
-            # Code for generating Course Completion Certificate!
-            packet = io.BytesIO()
-            canvasObj = canvas.Canvas(packet, pagesize=landscape(A3))
-            canvasObj.setFont("Times-Bold", 27)
-            width, height = A3
-            text_width = canvasObj.stringWidth(volunteer.vname, "Times-Bold", 27)
-            x_center = (width - text_width) / 2
-            canvasObj.drawString(x_center, settings.coordinate[activity], volunteer.vname)
-            canvasObj.save()
-            packet.seek(0)
-            new_pdf = PdfReader(packet)
+            if attendance:
+                # Code for generating Course Completion Certificate!
+                packet = io.BytesIO()
+                canvasObj = canvas.Canvas(packet, pagesize=landscape(A3))
+                canvasObj.setFont("Times-Bold", 27)
+                width, height = A3
+                text_width = canvasObj.stringWidth(volunteer.vname, "Times-Bold", 27)
+                x_center = (width - text_width) / 2
+                canvasObj.drawString(x_center, settings.COORDINATE[activity], volunteer.vname)
+                canvasObj.save()
+                packet.seek(0)
+                new_pdf = PdfReader(packet)
 
-            # Use this template_path if every activity has its own certificate.
-            template_path = os.path.join(settings.BASE_DIR, 'certificateTemplates') + "/" + activity + "/" + activity + "_" + volunteer.registered_academic_year + "_" + str(volunteer.registered_semester) + ".pdf"
-            # template_path = os.path.join(settings.BASE_DIR, 'certificateTemplates') + "/certificateTemplate.pdf"
+                # Use this template_path if every activity has its own certificate.
+                template_path = os.path.join(settings.BASE_DIR, 'certificateTemplates') + "/" + activity + "/" + activity + "_" + volunteer.registered_academic_year + "_" + str(volunteer.registered_semester) + ".pdf"
+                # template_path = os.path.join(settings.BASE_DIR, 'certificateTemplates') + "/certificateTemplate.pdf"
 
-            certificate_template = PdfReader(open(template_path, "rb"))
-            output = PdfWriter()
-            page = certificate_template.pages[0]
-            page.merge_page(new_pdf.pages[0])
-            output.add_page(page)
-            pdf_file_path = os.path.join(settings.BASE_DIR, "Certificate.pdf")
-            output_stream = open(pdf_file_path, "wb")
-            output.write(output_stream)
-            output_stream.close()
-            with open(pdf_file_path, "rb") as pdf_file:
-                completion_certificate = MIMEBase("application", "octet-stream")
-                completion_certificate.set_payload(pdf_file.read())
-            encoders.encode_base64(completion_certificate)
-            completion_certificate.add_header(
-                "Content-Disposition",
-                f'attachment; filename="{os.path.basename(pdf_file_path)}"',
-            )
-            email.attach(completion_certificate)
-            os.remove(pdf_file_path)
-            # End
+                certificate_template = PdfReader(open(template_path, "rb"))
+                output = PdfWriter()
+                page = certificate_template.pages[0]
+                page.merge_page(new_pdf.pages[0])
+                output.add_page(page)
+                pdf_file_path = os.path.join(settings.BASE_DIR, "Certificate.pdf")
+                output_stream = open(pdf_file_path, "wb")
+                output.write(output_stream)
+                output_stream.close()
+                with open(pdf_file_path, "rb") as pdf_file:
+                    completion_certificate = MIMEBase("application", "octet-stream")
+                    completion_certificate.set_payload(pdf_file.read())
+                encoders.encode_base64(completion_certificate)
+                completion_certificate.add_header(
+                    "Content-Disposition",
+                    f'attachment; filename="{os.path.basename(pdf_file_path)}"',
+                )
+                email.attach(completion_certificate)
+                os.remove(pdf_file_path)
+                # End
 
             # Code for generating Activity Report
             volDetails = [
@@ -756,8 +782,16 @@ def ApproveVolunteer(request):
             custom_style.alignment = 0
             custom_style.leftIndent = 0
             custom_style.rightIndent = 125
-            custom_style.spaceAfter = 6
-            custom_style.fontSize = 9
+            custom_style.spaceAfter = 8
+
+            max_ans = max(len(volunteer.ans1), max(len(volunteer.ans2), max(len(volunteer.ans3), max(len(volunteer.ans4), max(len(volunteer.ans5), len(volunteer.ans6))))))
+
+            if max_ans > 1100:
+                custom_style.fontSize = 7
+            elif max_ans > 850:
+                custom_style.fontSize = 8
+            else:
+                custom_style.fontSize = 10
 
             # PAGE1
             for i in range(len(coordinates[0])):
@@ -889,10 +923,8 @@ def ApproveVolunteer(request):
             volunteer.verified = 0
             volunteer.save()
             print("Error while sending certificate - " + str(error))
-            messages.error(request, "There was an error, please try again.")
+            messages.error(request, "There was an error in verifying the volunteer\'s report: "+str(error))
             return redirect("report-verification")
-        # messages.success(request, "Volunteer " + volunteer.vname + " verified successfully!")
-        # return redirect("report-verification")
 
 
 
@@ -906,9 +938,10 @@ def rejectVolunteerView(request):
         volunteer = Volunteer.objects.get(email=request.POST["email"])
         volunteer.verified = 2
         volunteer.submitted = 0
+        volunteer.rejection_count += 1
         volunteer.rejection_reason = request.POST["rejection_reason"]
         volunteer.save()
-        email_subject = "Oops! Your " + volunteer.activity + "'s Report Was Rejected "
+        email_subject = "[IMPORTANT] Oops! Your " + volunteer.activity + "'s Report Was Rejected "
         formatedMsg = []
         formatedMsg.append("The report you submitted for " + volunteer.activity + " has been rejected. The reason, as stated by " + volunteer.Cordinator + ", is:")
         formatedMsg.append('"' + request.POST["rejection_reason"] + '"')
@@ -937,7 +970,7 @@ def failVolunteerView(request):
         volunteer.submitted = 1
         volunteer.rejection_reason = request.POST["fail_reason"]
         volunteer.save()
-        email_subject = "Failure in completing the Social Services Course"
+        email_subject = "[IMPORTANT] Failure in completing the Social Services Course"
         formatedMsg = []
         formatedMsg.append("The 'Social Services' course required active participation, with successful completion of " + volunteer.activity + " being the primary criterion for passing.")
         formatedMsg.append("Regrettably, we are informing you that you have Failed in the 'Social Services' course.")
@@ -984,7 +1017,7 @@ def CShowSSCertificate(request):
             width, height = A3
             text_width = canvasObj.stringWidth('Volunteer Name', "Times-Roman", 27)
             x_center = (width - text_width) / 2
-            canvasObj.drawString(x_center, settings.coordinate[act], 'Volunteer Name')
+            canvasObj.drawString(x_center, settings.COORDINATE[act], 'Volunteer Name')
             canvasObj.save()
             packet.seek(0)
             new_pdf = PdfReader(packet)
@@ -1033,7 +1066,7 @@ def CShowFECertificate(request):
         width, height = A3
         text_width = canvasObj.stringWidth('Volunteer Name', "Times-Roman", 27)
         x_center = (width - text_width) / 2
-        canvasObj.drawString(x_center, settings.coordinate[act], 'Volunteer Name')
+        canvasObj.drawString(x_center, settings.COORDINATE[act], 'Volunteer Name')
         canvasObj.save()
         packet.seek(0)
         new_pdf = PdfReader(packet)

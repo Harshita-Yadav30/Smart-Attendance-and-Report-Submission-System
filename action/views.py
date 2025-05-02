@@ -23,7 +23,6 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from Volunteer.views import upload_to_google_drive
 
-
 def verifyAdmin(request):
     if request.method == 'POST':
         code = request.POST['code']
@@ -336,7 +335,7 @@ def sendEmailView(request):
         for e in emails:
             successMsg += e + '\n'
             email_body = render_to_string("email_sending_template.html", {'messages':message})
-            email = EmailMessage(request.POST['subject'], email_body, "noreply@semycolon.com", [e.strip()])
+            email = EmailMessage('[IMPORTANT] ' + request.POST['subject'], email_body, "noreply@semycolon.com", [e.strip()])
             email.content_subtype = "html"
             email.send(fail_silently=False)
         messages.success(request, 'Sent emails to \n\n' + successMsg)
@@ -371,47 +370,6 @@ def runFunction(request):
         data = currentData.objects.get(index="Current")
         coordinators = Coordinator.objects.filter(registered_academic_year = data.AcademicYear, registered_semester = data.Semester)
         date = str(datetime.datetime.now().date().strftime("%d-%m-%Y"))
-        myDict = {}
-
-        for coordinator in coordinators:
-            if coordinator.marked_IN_GP2 and not coordinator.marked_attendance_GP2:
-                if coordinator.activity in myDict:
-                    myDict[coordinator.activity] += ', ' + coordinator.cname
-                else:
-                    myDict[coordinator.activity]  = coordinator.cname
-                message = []
-                message.append('Hello ' + coordinator.cname + ',')
-                message.append('Our software noticed that you have only marked the IN Attendance on ' + date + ' for '  + coordinator.activity + '\'s volunteers but you did not mark the OUT Attendance. The attendance procedure is complete ONLY if you mark both the IN and OUT attendance.')
-                message.append('We request you to immediately mark the attendance using the "Mark attendance for another date" option. Your immediate and prompt action is expected.')
-                message.append('Note that, you will, however, not be able to mark the OUT Attendance now, because the time is past 11.59pm now. You can mark the attendance for ' + date + ' using "Mark attendance for another date" option.')
-                email_subject = 'Attendance not marked for ' + coordinator.activity
-                email_body = render_to_string("email_sending_template.html", {'messages':message})
-                email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [coordinator.email])
-                email.content_subtype = "html"
-                email.send(fail_silently=False)
-
-            if coordinator.marked_IN_FE and not coordinator.marked_attendance_FE:
-                if coordinator.flagshipEvent in myDict:
-                    myDict[coordinator.flagshipEvent] += ', ' + coordinator.cname
-                else:
-                    myDict[coordinator.flagshipEvent]  = coordinator.cname
-                message = []
-                message.append('Hello ' + coordinator.cname + ',')
-                message.append('Our software noticed that you have only marked the IN Attendance on ' + date + ' for '  + coordinator.flagshipEvent + '\'s volunteers but you did not mark the OUT Attendance. The attendance procedure is complete ONLY if you mark both the IN and OUT attendance.')
-                message.append('We request you to immediately mark the attendance using the "Mark attendance for another date" option. Your immediate and prompt action is expected.')
-                message.append('Note that, you will, however, not be able to mark the OUT Attendance now, because the time is past 11.59pm. You can mark the attendance for ' + date + ' using the "Mark attendance for another date" option.')
-                email_subject = 'Attendance not marked for ' + coordinator.flagshipEvent
-                email_body = render_to_string("email_sending_template.html", {'messages':message})
-                email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [coordinator.email])
-                email.content_subtype = "html"
-                email.send(fail_silently=False)
-
-            coordinator.marked_attendance_GP2 = False
-            coordinator.marked_attendance_FE = False
-            coordinator.marked_IN_GP2 = False
-            coordinator.marked_IN_FE = False
-            coordinator.save()
-
 
         stat = stats.objects.get(index=1)
         objs = Volunteer.objects.all()
@@ -424,25 +382,6 @@ def runFunction(request):
         stat.uCount = stat.vCount + stat.cCount + stat.sCount
         stat.save()
 
-
-        # for activity, coords in myDict.items():
-        #     secretaries = Secretary.objects.filter(activity = activity)
-        #     for sec in secretaries:
-        #         message = []
-        #         message.append('Hello ' + sec.sname + ',')
-        #         if ',' not in coords:
-        #             message.append('Our software noticed that ' + coords + ' has marked only the IN attendance for ' + sec.activity + ' but not the OUT attendance. The Coordinator has also been mailed about it and told to mark attendance immediately. This mail was to inform you regarding it.')
-        #         else:
-        #             message.append('Our software noticed that ' + coords + ' have marked only the IN attendance for ' + sec.activity + ' but have not marked the OUT attendance. These coordinators have also been mailed about it and told to mark attendance immediately. This mail was to inform you regarding it.')
-        #         message.append('Regards,')
-        #         message.append('The Website Team')
-        #         email_subject = 'Coordinators who haven\'t marked attendance for ' + sec.activity
-        #         email_body = render_to_string("email_sending_template.html", {'messages':message})
-        #         email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [sec.email])
-        #         email.content_subtype = "html"
-        #         email.send(fail_silently=False)
-
-        vols = Volunteer.objects.filter(registered_academic_year = data.AcademicYear, registered_semester = data.Semester, submitted = 1, verified = 0)
 
 
         # Code to mail coords to verify reports
@@ -479,11 +418,15 @@ def runFunction(request):
             message.append('Regards,')
             message.append('The Website Team')
 
-            email_subject = 'Please verify the Report(s) submitted to you!'
+            email_subject = '[IMPORTANT] Please verify the Report(s) submitted to you!'
             email_body = render_to_string("email_sending_template.html", {'messages':message})
             email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [c.email])
             email.content_subtype = "html"
             email.send(fail_silently=False)
+
+
+
+
 
         try:
             with open('/home/swdc/SWDCWebsite/action/backup.txt', 'r+') as f:
@@ -500,6 +443,32 @@ def runFunction(request):
 
         except Exception as e:
             print(e)
+
+
+
+
+
+
+        vols = Volunteer.objects.filter(registered_academic_year = data.AcademicYear, registered_semester = data.Semester, submitted = 0, verified = 2)
+        for v in vols:
+            if Activity.objects.get(name=v.activity).report_filling:
+                message = []
+                message.append("Hi " + v.vname + ",")
+                message.append("Your report was rejected by " + v.Cordinator)
+                message.append("Reason: " + v.rejection_reason)
+                message.append("Please edit and re-submit it immediately.")
+                message.append('Here\'s the login link for your convenience - https://swdc.pythonanywhere.com/a/login')
+                message.append("The Website Team")
+
+
+                email_subject = '[IMPORTANT] Your report was rejected'
+                email_body = render_to_string("email_sending_template.html", {'messages':message})
+                email = EmailMessage(email_subject, email_body, "noreply@semycolon.com", [v.email])
+                email.content_subtype = "html"
+                email.send(fail_silently=False)
+
+
+
 
         return HttpResponse('Done')
     else:
@@ -998,7 +967,7 @@ def failVolunteerView(request):
             messages.error(request, 'There are no volunteers to fail for the selected fields.')
             return redirect('fail')
 
-        email_subject = "Social Services Course: Update"
+        email_subject = "[IMPORTANT] Social Services Course: Update"
         formatedMsg = []
         formatedMsg.append("The 'Social Services' course required your active participation and successful completion of " + activity + " being the primary criterion for passing.")
         formatedMsg.append("Timely submission of the report was mandatory as per assessment guidelines, ensuring successful progression in the activity.")
@@ -1025,3 +994,36 @@ def failVolunteerView(request):
             email.send(fail_silently=False)
         messages.success(request, "The selected volunteers have been failed and mailed about it.")
         return redirect("fail")
+
+def report_data(request):
+    activities = Activity.objects.all()
+    current = currentData.objects.get(index='Current')
+    activity_data = []
+
+    for activity in activities:
+        volunteers = Volunteer.objects.filter(
+            activity=activity,
+            registered_academic_year=current.AcademicYear,
+            registered_semester=current.Semester
+        )
+
+        not_yet_submitted = sum(1 for v in volunteers if v.submitted == 0 and v.verified == 0)
+        submitted_yet_to_be_verified = sum(1 for v in volunteers if v.submitted == 1 and v.verified == 0)
+        verified = sum(1 for v in volunteers if v.submitted == 1 and v.verified == 1)
+        rejected = sum(1 for v in volunteers if v.submitted == 0 and v.verified == 2)
+        failed_by_coords = sum(1 for v in volunteers if v.submitted == 1 and v.verified == 3)
+        failed_for_not_submitting_report = sum(1 for v in volunteers if v.submitted == 0 and v.verified == 3)
+        total = volunteers.count()
+
+        activity_data.append({
+            'name': activity.name,
+            'not_yet_submitted': not_yet_submitted,
+            'submitted_yet_to_be_verified': submitted_yet_to_be_verified,
+            'verified': verified,
+            'rejected': rejected,
+            'failed_by_coords': failed_by_coords,
+            'failed_for_not_submitting_report': failed_for_not_submitting_report,
+            'total': total
+        })
+
+    return render(request, "reportSubmission.html", {'activities': activity_data})

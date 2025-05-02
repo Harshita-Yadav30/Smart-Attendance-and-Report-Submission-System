@@ -344,13 +344,13 @@ def download_attendance(request):
     if request.method == 'POST':
         activity_name = request.POST.get('event-name')
 
-        volunteers = Volunteer.objects.filter(activity=activity_name)
+        volunteers = Volunteer.objects.filter(activity=activity_name, registered_academic_year=secretary.registered_academic_year, registered_semester=secretary.registered_semester)
 
         workbook = openpyxl.Workbook()
         sheet = workbook.active
         sheet.title = 'Attendance'
 
-        headers = ['Name', 'Email', 'PRN', 'Contact No.', 'No. of Sessions Attended', 'Attendance Percentage', 'Report Marks', 'Data Collection Marks'] # If using older codes, remove 5th & 6th fields of headers list
+        headers = ['Name', 'Email', 'PRN', 'Contact No.', 'Division', 'No. of Sessions Attended', 'Attendance Percentage', 'Report Marks', 'Data Collection Marks'] # If using older codes, remove 5th & 6th fields of headers list
 
         # Old code for attendance sheet generation
 
@@ -442,10 +442,11 @@ def download_attendance(request):
             sheet.cell(row=row_num, column=2, value=volunteer.email)
             sheet.cell(row=row_num, column=3, value=volunteer.prn)
             sheet.cell(row=row_num, column=4, value=volunteer.contact_num)
-            sheet.cell(row=row_num, column=5, value=presents_value)
-            sheet.cell(row=row_num, column=6, value=attendance_percent)
-            sheet.cell(row=row_num, column=7, value=volunteer.reportFillingMarks)
-            sheet.cell(row=row_num, column=8, value=volunteer.dataCollectionMarks)
+            sheet.cell(row=row_num, column=5, value=volunteer.dept + '-' + volunteer.div)
+            sheet.cell(row=row_num, column=6, value=presents_value)
+            sheet.cell(row=row_num, column=7, value=attendance_percent)
+            sheet.cell(row=row_num, column=8, value=volunteer.reportFillingMarks)
+            sheet.cell(row=row_num, column=9, value=volunteer.dataCollectionMarks)
 
             row_num += 1
 
@@ -466,20 +467,10 @@ def SecDashboardView(request):
     if request.method == "GET":
         secretary = Secretary.objects.get(email=request.user.email)
         current = currentData.objects.get(index='Current')
-        coordinators = Coordinator.objects.filter(
-            submitted=1,
-            Secretary=request.user.username,
-            verified=0,
-            registered_academic_year=secretary.registered_academic_year,
-            registered_semester=secretary.registered_semester,
-        )
+        coordinators = Coordinator.objects.filter(submitted=1, Secretary=request.user.username, verified=0, registered_academic_year=secretary.registered_academic_year, registered_semester=secretary.registered_semester)
         SS = Activity.objects.filter(registration_enabled=True, flagship_event=False)
         FE = Activity.objects.filter(registration_enabled=True, flagship_event=True)
-        return render(
-            request,
-            "sdashboard.html",
-            {"coordinators": coordinators, "secretary": secretary, "SS": SS, "FE": FE, "current": current},
-        )
+        return render(request, "sdashboard.html", {"coordinators": coordinators, "secretary": secretary, "SS": SS, "FE": FE, "current": current})
     else:
         secretary = Secretary.objects.get(email=request.user.email)
         current = currentData.objects.get(index='Current')
@@ -514,36 +505,31 @@ def viewVolunteerAttendanceView(request):
         email = request.POST["email"]
         secretary = Secretary.objects.get(email=request.user.email)
         coordinator = Coordinator.objects.get(email=email)
-        volunteers = Volunteer.objects.filter(
-            Cordinator=coordinator.cname,
-            activity=secretary.activity,
-            registered_academic_year=secretary.registered_academic_year,
-            registered_semester=secretary.registered_semester,
-        )
+        volunteers = Volunteer.objects.filter(Cordinator=coordinator.cname, activity=secretary.activity, registered_academic_year=secretary.registered_academic_year, registered_semester=secretary.registered_semester)
+
         data = []
         for volunteer in volunteers:
             att = {}
-            attendance = volunteer.attendance
-            if "." in attendance:
-                attendance = attendance[1:]
-                volunteer.attendance = attendance
-                volunteer.save()
+            raw_attendance = volunteer.attendance
+            attendance = ''
+            for a in raw_attendance:
+                if a == ' ' or a == ',':
+                    continue
+                attendance += a
+
             for i in range(0, len(attendance), 11):
-                date = attendance[i + 1 : i + 11]
+                date = attendance[i+1 : i+11]
                 if attendance[i] == "$":
                     att[date] = "Present"
                 else:
                     att[date] = "Absent"
+
             sorted_keys = sorted(att.keys(), key=lambda x: datetime.strptime(x, '%d-%m-%Y'))
             sorted_date_dict = {key: att[key] for key in sorted_keys}
             att.clear()
             att.update(sorted_date_dict)
             data.append({volunteer.vname: att})
-        return render(
-            request,
-            "view_volunteer_attendance.html",
-            {"data": data, "coordinator": coordinator, "secretary": secretary},
-        )
+        return render(request, "view_volunteer_attendance.html", {"data": data, "coordinator": coordinator, "secretary": secretary})
     else:
         return redirect("coord-details")
 
@@ -563,7 +549,7 @@ def s_my_activity(request):
     else:
         messages.error(request, 'No activity chosen')
         return render(request, 's_my_activity.html', {"error": True})
-    volunteers = Volunteer.objects.filter(activity = secretary.activity, registered_academic_year = secretary.registered_academic_year,registered_semester = secretary.registered_semester)
+    volunteers = Volunteer.objects.filter(activity = activity, registered_academic_year = secretary.registered_academic_year,registered_semester = secretary.registered_semester)
 
     if request.method == "GET":
         not_yet_submitted = 0
@@ -587,7 +573,7 @@ def s_my_activity(request):
                 failed_by_coords += 1
             elif v.submitted == 0 and v.verified == 3:
                 failed_for_not_submitting_report += 1
-        v_yet_to_verified = Volunteer.objects.filter(activity = secretary.activity, registered_academic_year = secretary.registered_academic_year,registered_semester = secretary.registered_semester, submitted = 1, verified = 0)
+        v_yet_to_verified = Volunteer.objects.filter(activity = activity, registered_academic_year = secretary.registered_academic_year,registered_semester = secretary.registered_semester, submitted = 1, verified = 0)
         c_yet_to_verify = {}
 
         for v in v_yet_to_verified:
@@ -800,7 +786,7 @@ def failVolunteersView(request):
         volunteer.submitted = 1
         volunteer.rejection_reason = reason
         volunteer.save()
-        email_subject = "Social Services Course: Update"
+        email_subject = "[IMPORTANT] Social Services Course: Update"
         formatedMsg = []
         formatedMsg.append("The 'Social Services' course required active participation, with successful completion of " + volunteer.activity + " being the primary criterion for passing.")
         formatedMsg.append("Regrettably, we are informing you that you have Failed in the 'Social Services' course.")
@@ -837,7 +823,7 @@ def showCertificate(request):
         width, height = A3
         text_width = canvasObj.stringWidth('Volunteer Name', "Times-Roman", 27)
         x_center = (width - text_width) / 2
-        canvasObj.drawString(x_center, settings.coordinate[act], 'Volunteer Name')
+        canvasObj.drawString(x_center, settings.COORDINATE[act], 'Volunteer Name')
         canvasObj.save()
         packet.seek(0)
         new_pdf = PdfReader(packet)

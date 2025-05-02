@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import Coordinator, Volunteer, Secretary, Activity, currentData, Departments, Domain, stats, DomainAllotment
+from .models import Coordinator, Volunteer, Secretary, Activity, currentData, Departments, Domain, DomainAllotment
 from .captcha import FormWithCaptcha
 from validate_email import validate_email
 from django.conf import settings
@@ -418,7 +418,6 @@ def SecretaryRegistrationView(request):
         currentInfo = currentData.objects.get(index='Current')
         reg = Secretary.objects.create(sname=name, email=email, gender=gender,  dept=dept, academic_year=academic_year, registered_academic_year = currentInfo.AcademicYear, registered_semester = currentInfo.Semester, div=div, current_add=current_add, prn=prn, roll=roll, contact_num=contact_num, domain=domain, activity=activity)
         reg.save()
-
 
         messages.success(request, 'Hurray your registration is complete! You may login now!')
         messages.success(request, 'Your password is your PRN.')

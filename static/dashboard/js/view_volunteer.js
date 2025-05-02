@@ -32,6 +32,14 @@ chk1.addEventListener('change', checkboxes);
 chk2.addEventListener('change', checkboxes);
 
 approveConfirmBtn.addEventListener('click', function (event) {
+    if (!document.getElementById('attendance').checked) {
+        let confirmAttendance  = confirm("At least 50% attendance checkbox is unchecked. The volunteer won’t receive a certificate even if you approve the report.\nIf their attendance is above 50%, please tick the checkbox.");
+        if (!confirmAttendance) {
+            event.preventDefault();
+            return;
+        }
+    }
+
     reportMarks = document.querySelector('#reportMarks');
     dataCollectionMarks = document.querySelector('#dataCollection');
 
@@ -44,28 +52,10 @@ approveConfirmBtn.addEventListener('click', function (event) {
         approveText.style.display = 'inline-block';
         approveConfirmContainer.style.display = "none";
         blo.style.display = "none";
-        var intervalID = setInterval(iterateWithDelay, 2100);
-        iterateWithDelay(intervalID);
+        // var intervalID = setInterval(iterateWithDelay, 2100);
+        // iterateWithDelay(intervalID);
     }
 });
-
-// approveConfirmBtn.addEventListener('click', function (event) {
-//     // reportMarks = document.querySelector('#reportMarks');
-//     // dataCollectionMarks = document.querySelector('#dataCollection');
-
-//     // reportMarks = parseInt(reportMarks.value, 10);
-//     // dataCollectionMarks = parseInt(dataCollectionMarks.value, 10);
-
-//     // if ((reportMarks >= 0 && reportMarks <= 15) && (dataCollectionMarks >= 0 && dataCollectionMarks <= 10)) {
-//         document.querySelector('.options-container').style.display = 'none';
-//         document.getElementById('loader').style.display = 'inline-block';
-//         approveText.style.display = 'inline-block';
-//         approveConfirmContainer.style.display = "none";
-//         blo.style.display = "none";
-//         var intervalID = setInterval(iterateWithDelay, 2100);
-//         iterateWithDelay(intervalID);
-//     // }
-// });
 
 document.getElementById('confirmrejectionForm').addEventListener('submit', function (event) {
     event.preventDefault();
@@ -92,7 +82,6 @@ document.getElementById('rejectBtn').addEventListener('click', function() {
     rejForm.style.display = "block";
     blo.style.display = "block";
 });
-
 
 document.getElementById('failBtn').addEventListener('click', function() {
     failForm.style.display = "block";

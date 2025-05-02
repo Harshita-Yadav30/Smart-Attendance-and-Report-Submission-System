@@ -6,6 +6,10 @@ def profile_picture_upload_path(instance, filename):
     new_filename = f"{instance.user.first_name}_{instance.user.username}_{instance.prn}.{ext}"
     return os.path.join('profile_pictures', new_filename)
 
+class Count(models.Model):
+    id = models.IntegerField(default=1, primary_key=True)
+    count = models.IntegerField(default=0, blank=True)
+
 class Volunteer(models.Model):
     vname = models.CharField(max_length=50, blank=True)
     email = models.EmailField(max_length=30, blank=True)
@@ -42,6 +46,7 @@ class Volunteer(models.Model):
     marked_IN_attendance = models.BooleanField(default=False)
     profile_edited = models.CharField(max_length=10, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures', default='default-profile.jpg', blank=True)
+    rejection_count = models.IntegerField(default=0)
     def _str_(self):
         return self.vname
     class Meta:

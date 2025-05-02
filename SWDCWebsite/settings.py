@@ -52,6 +52,12 @@ TEMPLATES = [
         },
     },
 ]
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # In-memory cache
+        'LOCATION': 'unique-snowflake',
+    }
+}
 WSGI_APPLICATION = 'SWDCWebsite.wsgi.application'
 DATABASES = {
     'default': {
@@ -103,18 +109,20 @@ GROUPS = {
 }
 
 
-coordinate = {
+COORDINATE = {
     "Udaan": 300,
     "Utkarsh": 320,
-    "Aadhar": 320,
+    "Aadhar": 325,
     "Aashakiran": 300,
     "Go_Green": 320,
     "Vatsalya": 280,
     "Muskaan": 280,
     "Aavishkar": 320,
-    "Swaccha_Pune": 345
+    "Swaccha_Pune": 345,
+    "Matadhikar": 300
 }
 
+BLOODD_COUNT = 53
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'

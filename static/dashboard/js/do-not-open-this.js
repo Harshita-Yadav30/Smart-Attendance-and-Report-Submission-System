@@ -1,12 +1,154 @@
-// Hi there,
-// If you're reading this, then you're probably a clever developer trying to understand why you aren't able to copy-paste answers from ChatGPT or whatsoever..
-// But note that your efforts, by mutilating the code that is preventing you from pasting, will have no outcome.
-// So, with all due respect, we suggest you to close this window immediately and write your report without copy-pasting!
-// Have a good day! Yay!
+// // Hi there,
+// // If you're reading this, then you're probably a clever developer trying to understand why you aren't able to copy-paste answers from ChatGPT or whatsoever..
+// // But note that your efforts, by mutilating the code that is preventing you from pasting, will have no outcome.
+// // So, with all due respect, we suggest you to close this window immediately and write your report without copy-pasting!
+// // Have a good day! Yay!
+
+
+const myForm = document.getElementById("myForm");
+const submitBtn = document.getElementById("submitBtn");
+const errorMessage = document.getElementById("errorMessage");
+var wordCount1 = document.getElementById("wordCount1");
+var wordCount2 = document.getElementById("wordCount2");
+var wordCount3 = document.getElementById("wordCount3");
+var wordCount4 = document.getElementById("wordCount4");
+var wordCount5 = document.getElementById("wordCount5");
+var wordCount6 = document.getElementById("wordCount6");
+const copyMsg1 = document.getElementById("copyMsg1");
+const closeBtn1 = document.getElementById("closeBtn1");
+const copyMsg2 = document.getElementById("copyMsg2");
+const closeBtn2 = document.getElementById("closeBtn2");
+const timesCopied = document.getElementById("timesCopied");
+const errorAudio = document.getElementById("errorAudio");
+
+
+function getRandomArray() {
+  let arr = [0, 1, 2, 3, 4, 5];
+  for (let i = arr.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1)); // Random index from 0 to i
+    [arr[i], arr[j]] = [arr[j], arr[i]]; // Swap elements
+  }
+  return arr;
+}
+
+let minWordCount = 700; //700
+let minWhiteSpaceCount = 70; //minWhiteSpaceCount
+
+let nextBtn = document.getElementById("next-btn");
+let submitButton = document.getElementById("submitBtn");
+let prevBtn = document.getElementById("prev-btn");
+let ques = document.getElementsByClassName("ques");
+let ans = document.getElementsByClassName("ans");
+let cnt = 0;
+
+let sequence = getRandomArray();
+ques[sequence[0]].style.display = "block";
+
+
+function checkValidAnswer(btn, text, cnt) {
+  var c = (ans[sequence[cnt]].value.match(/[a-zA-Z]/g) || []).length;
+
+  if (c >= minWordCount) {
+    btn.disabled = false;
+    btn.style.backgroundColor = "#C9DF8A";
+    btn.innerText = text;
+    return true;
+  } else {
+    btn.disabled = false;
+    btn.style.backgroundColor = "grey";
+    btn.innerText = "Click here to check if your answer is eligible for submission.";
+    return false;
+  }
+}
+
+
+prevBtn.addEventListener("click", () => {
+  if (cnt == ques.length) {
+    submitButton.style.display = "none";
+    submitButton.disabled = true;
+    nextBtn.style.display = "block";
+    cnt = ques.length - 1;
+  }
+
+  if (cnt >= 1) {
+    cnt--;
+    for (let i=0; i<ques.length; i++) {
+      ques[i].style.display = "none";
+    }
+    ques[sequence[cnt]].style.display = "block";
+  }
+
+  if (cnt == 0) {
+    prevBtn.style.display = "none";
+  }
+});
+
+
+nextBtn.addEventListener("click", () => {
+  if (cnt == ques.length) {
+    res = checkValidAnswer(submitButton, "Submit Your Report", cnt)
+  }
+  else{
+    res = checkValidAnswer(nextBtn, "Next Question", cnt)
+  }
+  if (countWhitespaces(ans[sequence[cnt]].value) < minWhiteSpaceCount){
+    document.getElementById("errorMessage").style.display = "block";
+    document.getElementById("errorMessage").innerText = `There are not enough whitespaces in your answer to count it as valid and readable. You will not be able to submit your report without correcting this.`;
+    return;
+  }
+  if (res){
+    if (cnt == 0){
+        prevBtn.style.display = "block";
+    }
+    document.getElementById("errorMessage").style.display = "none";
+    cnt++;
+
+    if (cnt == ques.length){
+        submitButton.disabled = false;
+        submitButton.style.display = "block";
+        nextBtn.style.display = "none";
+        // cnt = 0;
+    }
+    else{
+        for (let i=0; i<ques.length; i++) {
+          ques[i].style.display = "none";
+        }
+        ques[sequence[cnt]].style.display = "block";
+    }
+  }
+  else{
+    document.getElementById("errorMessage").style.display = "block";
+  }
+});
+
+let blurred = false;
+function onBlur() {
+  blurred = true;
+}
+window.addEventListener("blur", onBlur);
+let tempWin = window.open("", "_blank", "width=1,height=1,top=-1000,left=-1000");
+if (tempWin) {
+  tempWin.close();
+}
+setTimeout(() => {
+  if (!blurred) {
+    errorAudio.play()
+    alert("🚨 Oops! We have found some extensions that prevent getting detected when you change tabs. Please uninstall those extensions and come back to report filling..");
+    document.getElementById("logoutForm").submit();
+  }
+  else
+  {
+    document.getElementById('reportfillingcontent').style.display = 'block';
+    document.getElementById('popup_show').style.display = 'none';
+  }
+  window.removeEventListener("blur", onBlur);
+}, 1000);
+
 
 let blurCnt = 0;
 
 window.addEventListener("blur", () => {
+    errorAudio.play()
     blurCnt++;
     if(blurCnt>3){
         document.getElementById("logoutForm").submit();
@@ -19,16 +161,19 @@ function requestFullScreen() {
 
   if (elem.requestFullscreen) {
     elem.requestFullscreen().catch(() => {
+        errorAudio.play();
       alert("You have denied full screen request. Logging you out.");
       document.getElementById("logoutForm").submit();
     });
   } else {
+      errorAudio.play();
     alert("Fullscreen is not supported on your device. Please fill your report from a device that supports full screen. Logging you out.");
     document.getElementById("logoutForm").submit();
   }
 }
 
 function denyFullScreen() {
+    errorAudio.play();
   alert("You have denied full screen request. Logging you out.");
   document.getElementById("logoutForm").submit();
 }
@@ -45,9 +190,11 @@ document.addEventListener("fullscreenchange", function () {
   if (!document.fullscreenElement) {
     fullScreenViolate++;
     if (fullScreenViolate >= 3) {
-      alert("You have violatd full screen " + fullScreenViolate + " times. We're logging you out.");
+        errorAudio.play()
+      alert("You have violated full screen " + fullScreenViolate + " times. We're logging you out.");
       document.getElementById("logoutForm").submit();
     } else {
+        errorAudio.play()
       alert("You have violated full screen " + fullScreenViolate + " times. You'll be logged out the third time you do this.");
       document.getElementById("fullscreen-popup").style.display = "block";
     }
@@ -61,7 +208,7 @@ document.addEventListener("keydown", function (event) {
   let currentTime = Date.now();
   let timeDiff = currentTime - lastKeyTime;
 
-  if (typingIntervals.length >= 5) {
+  if (typingIntervals.length >= 3) {
     typingIntervals.shift();
   }
   typingIntervals.push(timeDiff);
@@ -96,7 +243,7 @@ document.addEventListener("keydown", function (event) {
     event.keyCode === 123 || // F12
     (event.metaKey && event.altKey && event.key === "I") || // Cmd+Option+I (Mac DevTools)
     (event.metaKey && event.altKey && event.key === "i") || // Cmd+Option+I (Mac DevTools)
-    (event.metaKey && event.key === "U")(
+    (event.metaKey && event.key === "U") || (
       // Cmd+U (Mac View Source)
       event.metaKey && event.key === "u"
     ) // Cmd+U (Mac View Source)
@@ -135,22 +282,9 @@ function update_ids() {
   }
 }
 
-setInterval(update_ids, 1000);
-const myForm = document.getElementById("myForm");
-const submitBtn = document.getElementById("submitBtn");
-const errorMessage = document.getElementById("errorMessage");
-var wordCount1 = document.getElementById("wordCount1");
-var wordCount2 = document.getElementById("wordCount2");
-var wordCount3 = document.getElementById("wordCount3");
-var wordCount4 = document.getElementById("wordCount4");
-var wordCount5 = document.getElementById("wordCount5");
-var wordCount6 = document.getElementById("wordCount6");
-const copyMsg1 = document.getElementById("copyMsg1");
-const closeBtn1 = document.getElementById("closeBtn1");
-const copyMsg2 = document.getElementById("copyMsg2");
-const closeBtn2 = document.getElementById("closeBtn2");
-const timesCopied = document.getElementById("timesCopied");
-const errorAudio = document.getElementById("errorAudio");
+
+setInterval(update_ids, 5000);
+
 
 closeBtn1.addEventListener("click", function () {
   copyMsg1.style.display = "none";
@@ -160,21 +294,21 @@ closeBtn2.addEventListener("click", function () {
   copyMsg2.style.display = "none";
 });
 
-const logged_in_hours = document.getElementById("hours");
-const logged_in_minutes = document.getElementById("minutes");
-const time_left = document.getElementById("time_left");
-function updateTimeLeft() {
-  var currentDate = new Date();
-  var timeLeft = 250 - (currentDate.getHours() * 60 + currentDate.getMinutes() - 330 - logged_in_hours.value * 60 - logged_in_minutes.value);
-  time_left.innerHTML = timeLeft;
-  if (timeLeft<2)
-  {
-    document.getElementById("logoutForm").submit();
-  }
-}
+// const logged_in_hours = document.getElementById("hours");
+// const logged_in_minutes = document.getElementById("minutes");
+// const time_left = document.getElementById("time_left");
+// function updateTimeLeft() {
+//   var currentDate = new Date();
+//   var timeLeft = 250 - (currentDate.getHours() * 60 + currentDate.getMinutes() - 330 - logged_in_hours.value * 60 - logged_in_minutes.value);
+//   time_left.innerHTML = timeLeft;
+//   if (timeLeft<2)
+//   {
+//     document.getElementById("logoutForm").submit();
+//   }
+// }
 
-setInterval(updateTimeLeft, 60000);
-updateTimeLeft();
+// setInterval(updateTimeLeft, 60000);
+// updateTimeLeft();
 
 function onLoadComplete() {
   setTimeout(
@@ -248,12 +382,12 @@ function enableSubmit() {
   var c6 = (document.getElementById(ids[5]).value.match(/[a-zA-Z]/g) || [])
     .length;
   if (
-    c1 >= 700 &&
-    c2 >= 700 &&
-    c3 >= 700 &&
-    c4 >= 700 &&
-    c5 >= 700 &&
-    c6 >= 700
+    c1 >= minWordCount &&
+    c2 >= minWordCount &&
+    c3 >= minWordCount &&
+    c4 >= minWordCount &&
+    c5 >= minWordCount &&
+    c6 >= minWordCount
   ) {
     submitBtn.disabled = false;
     submitBtn.style.backgroundColor = "green";
@@ -261,19 +395,15 @@ function enableSubmit() {
   } else {
     submitBtn.disabled = true;
     submitBtn.style.backgroundColor = "grey";
-    submitBtn.innerText = "Write all answers to enable submit button";
+    submitBtn.innerText = "Click here to check if your answer is eligible for submission.";
   }
 }
 
 function countWhitespaces(str) {
   let count = 0;
   for (let i = 0; i < str.length; i++) {
-    if (
-      str[i] === " " &&
-      str[i + 1] != " " &&
-      str[i] != "\n" &&
-      str[i + 1] != "\n"
-    ) {
+    if (str[i] === " " && str[i + 1] != " " && str[i] != "\n" && str[i + 1] != "\n")
+    {
       count++;
     }
   }
@@ -284,7 +414,7 @@ function checkAnswers() {
   for (let i = 0; i < 6; i++) {
     var ans = document.getElementById(ids[i]).value.trim();
     var whiteSpaces = countWhitespaces(ans);
-    if (whiteSpaces < 90) {
+    if (whiteSpaces < minWhiteSpaceCount) {
       str =
         "Your answer to question " +
         (i + 1).toString() +
@@ -292,7 +422,7 @@ function checkAnswers() {
         ans +
         ".<br><br> It has only " +
         whiteSpaces +
-        " non-continuous white spaces. <br><br>This is not counted as a valid answer because it seems that you have typed continuous sentences whithout whitespaces to achieve the character count of 700 per question. This will make your answer difficult to read.<br><b>There must be atleast 90 whitespaces in your answer to count it as valid and readable. You will not be able to submit your report without correcting this.</b>";
+        " non-continuous white spaces. <br><br>This is not counted as a valid answer because it seems that you have typed continuous sentences whithout whitespaces to achieve the character count of minWordCount per question. This will make your answer difficult to read.<br><b>There must be atleast minWhiteSpaceCount whitespaces in your answer to count it as valid and readable. You will not be able to submit your report without correcting this.</b>";
       answersError.innerHTML = str;
       return false;
     }
@@ -315,12 +445,12 @@ myForm.addEventListener("submit", function (e) {
   var c6 = (document.getElementById(ids[5]).value.match(/[a-zA-Z]/g) || [])
     .length;
   if (
-    c1 >= 700 &&
-    c2 >= 700 &&
-    c3 >= 700 &&
-    c4 >= 700 &&
-    c5 >= 700 &&
-    c6 >= 700
+    c1 >= minWordCount &&
+    c2 >= minWordCount &&
+    c3 >= minWordCount &&
+    c4 >= minWordCount &&
+    c5 >= minWordCount &&
+    c6 >= minWordCount
   ) {
     if (checkAnswers()) {
       myForm.submit();
@@ -331,6 +461,7 @@ myForm.addEventListener("submit", function (e) {
 });
 
 var textareas = document.querySelectorAll("textarea");
+let copyAns = [false, false, false, false, false, false];
 
 for (let i = 0; i < textareas.length; i++) {
   textareas[i].addEventListener("paste", function (e) {
@@ -347,13 +478,13 @@ for (let i = 0; i < textareas.length; i++) {
     const hiddenID = document.getElementById(ids[6 + i]);
     var diff = txtareaID.value.length - hiddenID.value.length;
 
-    if (diff > 2) {
-      txtareaID.value = previousVal.value;
-      copyMsg2.style.display = "block";
-      errorAudio.play();
-    } else {
+    // if (diff > 8) {
+    //     txtareaID.value = hiddenID.value;
+    //     copyMsg2.style.display = "block";
+    //     errorAudio.play();
+    // } else {
       hiddenID.value = txtareaID.value;
-    }
+    // }
     var wordCount = "wordCount" + (i + 1).toString();
     var countMessage = "countMessage" + (i + 1).toString();
     var successMessage = "successMessage" + (i + 1).toString();
@@ -364,6 +495,13 @@ for (let i = 0; i < textareas.length; i++) {
       successMessage
     );
     enableSubmit();
+
+    // if (cnt == 5){
+    //   checkValidAnswer(submitButton, "Submit Your Report", cnt);
+    // }
+    // else{
+    //   checkValidAnswer(nextBtn, "Next Question", cnt);
+    // }
   });
 }
 
@@ -374,7 +512,7 @@ function updateCount(
   successMessageArea
 ) {
   wordCountParameter.innerText =
-    700 - (myTextArea.value.match(/[a-zA-Z]/g) || []).length;
+    minWordCount - (myTextArea.value.match(/[a-zA-Z]/g) || []).length;
   if (parseInt(wordCountParameter.innerHTML) <= 0) {
     document.getElementById(countMessageArea).style.display = "none";
     document.getElementById(successMessageArea).style.display = "block";

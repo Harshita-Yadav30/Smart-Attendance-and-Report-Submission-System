@@ -133,40 +133,30 @@
                         </div>
                     </div>
 
-                    {% if secretary.registered_academic_year == current.AcademicYear and secretary.registered_semester == current.Semester and not secretary.activity %}
+                    {% if secretary.registered_academic_year == current.AcademicYear and secretary.registered_semester == current.Semester and not secretary.activity and SS %}
                         <form method="post">
                             {% csrf_token %}
-                            <h1>Choose Social Services</h1>
-                            <select name="activity">
-                                {% if SS %}
-                                    <option value="">Select activity</option>
-                                    {% for act in SS %}
-                                        <option value="{{ act }}">{{ act }}</option>
-                                    {% endfor %}
-                                {% else %}
-                                    <option value="">No activities available</option>
-                                {% endif %}
+                            <h1>Choose Social Services Activity</h1>
+                            <select name="activity" required>
+                                <option value="" selected disabled>Select activity</option>
+                                {% for act in SS %}
+                                    <option value="{{act}}">{{act}}</option>
+                                {% endfor %}
                             </select>
-
                             <button type="submit">Choose Activity</button>
                         </form>
                     {% endif %}
 
-                    {% if secretary.registered_academic_year == current.AcademicYear and secretary.registered_semester == current.Semester and not secretary.flagshipEvent %}
+                    {% if secretary.registered_academic_year == current.AcademicYear and secretary.registered_semester == current.Semester and not secretary.flagshipEvent and FE %}
                         <form method="post">
                             {% csrf_token %}
                             <h1>Choose Flagship</h1>
-                            <select name="flagshipEvent">
-                                {% if FE %}
-                                    <option value="">Select activity</option>
-                                    {% for act in FE %}
-                                        <option value="{{ act }}">{{ act }}</option>
-                                    {% endfor %}
-                                {% else %}
-                                    <option value="">No activities available</option>
-                                {% endif %}
+                            <select name="flagshipEvent" required>
+                                <option value="" selected disabled>Select Flagship Event</option>
+                                {% for act in FE %}
+                                    <option value="{{act}}">{{act}}</option>
+                                {% endfor %}
                             </select>
-
                             <button type="submit">Choose Flagship</button>
                         </form>
                     {% endif %}
@@ -313,5 +303,18 @@
         </script>
         </div>
     </section>
+
+<script>
+    setInterval(function () {
+  let before = performance.now();
+  debugger;
+  let after = performance.now();
+
+  if (after - before > 100) {
+      alert('Oops! You shouldn\'t have opened the developer options. We\'re logging you out now!');
+      document.getElementById("logoutForm").submit();
+  }
+}, 500);
+</script>
 </body>
 </html>

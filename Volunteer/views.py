@@ -407,7 +407,7 @@ def rejectedReportFillingView(request):
         user = User.objects.get(email = request.user.email)
         hours = str(user.last_login)[11:13]
         minutes = str(user.last_login)[14:16]
-        return render (request, 'report-filling-rejected.html', {'volunteer': volunteer, 'activity': activity, 'current' : current, 'hours':hours, 'minutes':minutes, 'guardian_faculties':guardian_faculties})
+        return render (request, 'report-filling-for-rejected.html', {'volunteer': volunteer, 'activity': activity, 'current' : current, 'hours':hours, 'minutes':minutes, 'guardian_faculties':guardian_faculties})
     else:
         return redirect('vdashboard')
 
@@ -434,18 +434,29 @@ def reportFillingView(request):
         device = request.user_agent.is_pc
 
         if not device:
+            messages.error(request, 'Oops! Seems like you are accessing this page from your mobile phone.')
             return render(request, 'report-filling-blocked.html', {'browser':browser, 'os':os})
 
-        if 'linux' in os or 'Linux' in os:
-            messages.error(request, 'Oops! Seems like you\'re accessing this page from a mobile device in desktop mode. Please use your actual laptop/desktop device.')
+        os_check = str(request.user_agent.os)
+
+        backup_check = request.META.get('HTTP_USER_AGENT', '')
+        os_check += backup_check
+
+        # Below check is important. Some students might open report filling page inside a VirtualBox VM running Ubuntu/Linux & enter answers into it without exiting the full screen mode
+        # Below check blocks someone accessing the page from a mobile device in 'desktop mode'
+        # When most mobile devices try to mimic being a desktop device when in 'desktop mode', they end up telling in their HTTP request that they are using linux/ubuntu OS
+        if 'linux' in os_check or 'Linux' in os_check or 'ubuntu' in os_check or 'Ubuntu' in os_check:
+            messages.error(request, 'Oops! Your device failed some of our security checks. Please contact your coordinator!')
             return render(request, 'report-filling-blocked.html', {'browser':browser, 'os':os})
 
         guardian_faculties = GuardianFaculty.objects.filter(active=True)
         volunteer = Volunteer.objects.get(email=request.user.email)
         activity = Activity.objects.get(name=volunteer.activity)
         user = User.objects.get(email = request.user.email)
-        hours = str(user.last_login)[11:13]
-        minutes = str(user.last_login)[14:16]
+        # hours = str(user.last_login)[11:13]
+        # minutes = str(user.last_login)[14:16]
+        hours = user.last_login.strftime("%H")
+        minutes = user.last_login.strftime("%M")
         return render(request, 'report-filling-main.html', {'guardian_faculties':guardian_faculties, 'activity':activity, 'volunteer':volunteer, 'hours':hours, 'minutes':minutes, 'browser':browser, 'os':os})
 
     if request.method == 'POST':
@@ -692,8 +703,8 @@ def downloadCertificateView(request):
     if request.method == 'GET':
         volunteer = Volunteer.objects.get(email = request.user.email)
         if volunteer.verified != 1:
-            messages.error(request, 'Report not verified.')
-            return redirect('vdashboard')
+            messages.error(request, 'Oops! Your report is not yet verified. You can\'t download your certificate!!!')
+            return redirect('home_reportfilling')
 
         activity = (volunteer.activity).replace(" ", "_")
 
@@ -703,7 +714,7 @@ def downloadCertificateView(request):
         width, height = A3
         text_width = canvasObj.stringWidth(volunteer.vname, "Times-Bold", 27)
         x_center = (width - text_width) / 2
-        canvasObj.drawString(x_center, settings.coordinate[activity], volunteer.vname)
+        canvasObj.drawString(x_center, settings.COORDINATE[activity], volunteer.vname)
         canvasObj.save()
         packet.seek(0)
         new_pdf = PdfReader(packet)
@@ -740,8 +751,8 @@ def downloadReportView(request):
     if request.method == 'GET':
         volunteer = Volunteer.objects.get(email = request.user.email)
         if volunteer.verified != 1:
-            messages.error(request, 'Report not verified.')
-            return redirect('vdashboard')
+            messages.error(request, 'Oops! Your report is not yet verified. You can\'t download your report!!!')
+            return redirect('home_reportfilling')
         volDetails = [
                 [
                     volunteer.vname,

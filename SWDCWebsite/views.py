@@ -4,8 +4,74 @@ from .captcha import FormWithCaptcha
 import os
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
-from authentication.models import Volunteer, Coordinator, Secretary, Event, Attendance
+from authentication.models import Volunteer, Coordinator, Secretary, Event, Attendance, Count
 from django.contrib.auth.models import User
+import random
+import gspread
+from django.conf import settings
+# from django.core.cache import cache
+# from oauth2client.service_account import ServiceAccountCredentials
+
+# settings.BLOODD_COUNT = 0
+
+def bloodDonationView(request):
+    return render(request, 'bloodDCount.html')
+
+def bloodDonationExtraView(request):
+    return render(request, 'bloodDCountc.html')
+
+client = gspread.oauth()
+
+def get_blood_donated_count(spreadsheet_id, sheet_names):
+    total_count = 0
+    c = Count.objects.get(id=1)
+
+    try:
+        for sheet_name in sheet_names:
+            sheet = client.open_by_key(spreadsheet_id).worksheet(sheet_name)
+            column_values = sheet.col_values(2)  # Fetch last column (Blood Donated?)
+            count = sum(1 for value in column_values[1:] if value.strip())  # Skip header
+            total_count += count
+
+        if c:
+            c.count = total_count
+            c.save()
+        else:
+            c = Count.objects.create(count=total_count)
+            c.save()
+
+    # current_count = cache.get("BLOODD_COUNT", 0)
+    # cache.set("BLOODD_COUNT", max(current_count, total_count))
+
+    except Exception as e:
+        print(f"Error fetching data for {spreadsheet_id}: {e}")
+        if c:
+            total_count = c.count
+
+    # print(f"Total count for {spreadsheet_id}: {total_count}")
+    # settings.BLOODD_COUNT = max(settings.BLOODD_COUNT, total_count)
+    return total_count
+
+def blood_donor_count(request):
+    count1 = get_blood_donated_count("1FdhD7ZwTx0uNZ-DAySxGsSEZfFXUIBdSikR5TxHXPFI", ["Staff1", "Staff2", "Staff3", "Staff4", "Seminar1", "Seminar2", "Seminar3", "Seminar4"])
+    # count2 = get_blood_donated_count("148B7eJf69QwE2_s8gIvlFrcZmlHEXlQwSgZU6909n34", ["Sheet1", "Sheet2", "Sheet3", "Sheet4"])
+    settings.BLOODD_COUNT = max(settings.BLOODD_COUNT, count1)
+    return JsonResponse({"count": count1})
+
+
+def testlink(request):
+    browser = str(request.user_agent.browser.family) + ' (Version ' + str(request.user_agent.browser.version_string) + ')'
+    os = str(request.user_agent.os.family)
+    device = request.user_agent.is_pc
+    s = ''
+    #s += str(request.user_agent.browser) + '\n'
+    #s += str(request.user_agent.string) + '\n'
+
+    user_agent_string = request.META.get('HTTP_USER_AGENT', '')
+    s += user_agent_string
+
+    return render(request, 'test.html', {'s':s})
+
 
 def userdata(request):
     if User.objects.filter(username=request.POST['username']).exists():
@@ -122,10 +188,31 @@ def receivedata(request):
 
 
 def homeView(request):
+    # index=2 is only used to update the 'hits' on the home page.
+    # If index=1 is used then the lastUpdated will be the same time when the home page loads, making the viewer think that the lastUpdated was just now.
+    statsToUpdate = stats.objects.get(index=2)
+    statsToUpdate.hits += 1
+    statsToUpdate.save()
+
+    # index=1 is used to store the statsapart from the 'hits'
     s = stats.objects.get(index=1)
-    # s.hits += 1
-    # s.save()
-    return render (request, 'homepage.html', {'hits':s.hits, 'uCount': s.uCount,'vCount': s.vCount,'cCount': s.cCount,'sCount': s.sCount,'totalLogins': s.totalLogins,'lastUpdated':s.lastUpdated})
+    return render (request, 'homepage.html', {'hits':statsToUpdate.hits, 'uCount': s.uCount,'vCount': s.vCount,'cCount': s.cCount,'sCount': s.sCount,'totalLogins': s.totalLogins,'lastUpdated':s.lastUpdated})
+
+
+
+def aboutView(request):
+    # index=2 is only used to update the 'hits' on the home page.
+    # If index=1 is used then the lastUpdated will be the same time when the home page loads, making the viewer think that the lastUpdated was just now.
+    statsToUpdate = stats.objects.get(index=2)
+    statsToUpdate.hits += 1
+    statsToUpdate.save()
+
+    # index=1 is used to store the statsapart from the 'hits'
+    s = stats.objects.get(index=1)
+    return render (request, 'about.html', {'hits':statsToUpdate.hits, 'uCount': s.uCount,'vCount': s.vCount,'cCount': s.cCount,'sCount': s.sCount,'totalLogins': s.totalLogins,'lastUpdated':s.lastUpdated})
+
+
+
 
 def custom_404(request, exception):
     return render(request, '404.html')

@@ -20,4 +20,5 @@ urlpatterns = [
     path('viewVolunteer/', views.viewVolunteer, name='viewVolunteer'),
     path('deleteAttendance/', views.deleteAttendance, name='deleteAttendance'),
     path('coordAttendance/', views.coordAttendance, name='coordAttendance'),
+    path('rsd/', views.report_data, name='report_data'),
 ]

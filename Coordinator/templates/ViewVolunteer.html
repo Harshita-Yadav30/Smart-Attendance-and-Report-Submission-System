@@ -69,10 +69,12 @@
         padding: 8px;
         width: 100%;
     }
-    .courses{
+      .courses{
         margin-top:1550px;
     }
+
     </style>
+
 </head>
 
 <body>
@@ -139,7 +141,7 @@
     <div style="display: flex; justify-content: space-between; padding: 10px;  gap: 20px;" class="options-container">
         <button class="btn btn-success mb-4" style="height: 40px; width: 100px; margin-top: 10px; background-color: #4BB543;display: flex; align-items: center; justify-content: center;"id="approveBtn">Approve</button>
 
-        <button class="btn btn-warning mb-4" style="margin-top: 10px; color:black;width: 100px; height: 40px; background-color: yellow; display: flex; align-items: center; justify-content: center;" id="rejectBtn">Reject</button>
+        <button class="btn btn-warning mb-4" style="margin-top: 10px; color:black;width: 100px; height: 40px; background-color: yellow; display: flex; align-items: center; justify-content: center; visibility: {% if volunteer.rejection_count == 0 %} visible {% else %} hidden {% endif %};" id="rejectBtn">Reject</button>
 
         <button class="btn btn-danger mb-4" style="height: 40px; width: 100px; margin-top: 10px; background-color: red;display: flex; align-items: center; justify-content: center;" id="failBtn">Fail</button>
     </div>
@@ -155,13 +157,18 @@
             <input type="hidden" name="email" value="{{volunteer.email}}">
 
         <div class="form-outline mb-4">
+            <label class="form-label" for="attendance" style="color:red; font-size: 15px; font-weight: bold; "><b>Tick Checkbox below if Attendance of Volunteer is atleast 50%</b></label><br>
+            <input type="checkbox" id="attendance" name="attendance" value="Yes" style=" border: 2px solid black;transform: scale(1); width: 20px; height: 20px;">
+        </div>
+
+        <div class="form-outline mb-4">
             <label class="form-label" for="reportMarks"><b>Report Filling Marks</b></label><br>
             <input type="text" id="reportMarks" name="reportMarks" placeholder="Max. marks are 15" required>
         </div>
 
         <div class="form-outline mb-4">
             <label class="form-label" for="dataCollection"><b>Data Collection Marks</b></label><br>
-            <input type="text" id="dataCollection" name="dataCollection" placeholder="Max. marks are 15" required>
+            <input type="text" id="dataCollection" name="dataCollection" placeholder="Max. marks are 10" required>
         </div>
 
             <div style="text-align: left;" class="form-check form-check-inline">
@@ -174,39 +181,38 @@
                 <label for="chk2" class="form-check-label" style="margin-left: 4px;">{{volunteer.vname}} has actively participated in {{volunteer.activity}} and has been passed in the Social Services Course by the Activity Heads.</label>
             </div>
             <br><br>
-            <div class="form-group">
-                {{ form.captcha }}
-            </div>
+            <!--<div class="form-group">-->
+            <!--    {{ form.captcha }}-->
+            <!--</div>-->
             <input class="btn btn-success mb-1" type="submit" value="Approve Report" id="approveConfirmBtn" disabled><br>
             <small style="color: red;"><b>This action is irreversible!!</b></small>
         </form>
     </div>
 
-
-    <div id="rejForm">
-        <h5>Enter detailed reason for rejecting Report</h5>
-        <small>This will be mailed to {{volunteer.vname}}</small>
-        <form action="{% url 'rejectVolunteer' %}" style="padding-bottom: 2px;" method="POST" id="confirmrejectionForm">
-            {% csrf_token %}
-            <input type="hidden" name="email" value="{{volunteer.email}}">
-            <textarea name="rejection_reason"
-                placeholder="Volunteer will be asked to edit report as mentioned by you here." required></textarea>
-            <input class="btn btn sub-btn btn-block mb-4" style="background-color: red;" type="submit" value="Confirm Rejection" id="confirmrejectionBtn" />
-            <div style="display: flex; justify-content: center;">
-                <div class="spinner-border text-success" style="display: none; width: 25px; height: 25px;" id="rejectLoader">
-                    <span class="sr-only"></span>
+        <div id="rejForm">
+            <h5>Enter detailed reason for rejecting Report</h5>
+            <small>This will be mailed to {{volunteer.vname}}</small>
+            <form action="{% url 'rejectVolunteer' %}" style="padding-bottom: 2px;" method="POST" id="confirmrejectionForm">
+                {% csrf_token %}
+                <input type="hidden" name="email" value="{{volunteer.email}}">
+                <textarea name="rejection_reason" style="border: 2px solid #DDDDDD; border-radius: 5px;padding: 15px; width:90%;"
+                    placeholder="Volunteer will be asked to edit report as mentioned by you here." required></textarea>
+                <input class="btn btn sub-btn btn-block mb-4" style="background-color: red;" type="submit" value="Confirm Rejection" id="confirmrejectionBtn" />
+                <div style="display: flex; justify-content: center;">
+                    <div class="spinner-border text-success" style="display: none; width: 25px; height: 25px;" id="rejectLoader">
+                        <span class="sr-only"></span>
+                    </div>
+                    <span style="display: none; color: green; margin-bottom: 40px" id="rejectText">&nbsp; &nbsp;Sending mail...</span>
                 </div>
-                <span style="display: none; color: green; margin-bottom: 40px" id="rejectText">&nbsp; &nbsp;Sending mail...</span>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
 
     <div id="failForm">
         <h5>Enter detailed reason for failing the Volunteer</h5>
         <form action="{% url 'fail-volunteer' %}" style="padding-bottom: 2px;" method="POST" id="confirmfailForm">
             {% csrf_token %}
             <input type="hidden" name="email" value="{{volunteer.email}}">
-            <textarea name="fail_reason"
+            <textarea name="fail_reason" style="border: 2px solid #DDDDDD; border-radius: 5px;padding: 15px; width:90%;"
                 placeholder="This will be mailed to {{volunteer.vname}}. They cannot fill report again."
                 required></textarea>
             <input class="btn btn sub-btn btn-block mb-4" style="background-color: red;" type="submit" value="Confirm Failure in Course" id="confirmfailBtn" />
